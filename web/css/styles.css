@@ -1,0 +1,126 @@
+.text-off-white {
+  color: #e9ecef;
+}
+.text-dark-grey {
+  color: #262626;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.five-column-flex {
+  width: 20%;
+  padding: 1%;
+  -ms-flex: 0 0 50%;
+  flex: 0 0 50%;
+  max-width: 25%;
+}
+.lightbox-gallery {
+  color: #000;
+  overflow-x: hidden
+}
+.lightbox-gallery p {
+  color: #fff
+}
+.lightbox-gallery h2 {
+  font-weight: bold;
+  margin-bottom: 40px;
+  padding-top: 40px;
+  color: #fff
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: flex-start;
+  padding: 2%;
+  width: 100%;
+  margin: auto;
+}
+.main-photo {
+  width: 100%;
+  margin: auto;
+  flex: 0 0 100%;
+  -ms-flex: 0 0 100%;
+  max-width: 100%;
+  padding-left: 1%;
+  padding-right: 1%;
+}
+.img-main {
+  width: 100%;
+}
+.img-fluid {
+  object-fit: cover;
+  width: 120px !important;
+  height: 120px !important;
+}
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4% 2% 2% 2%;
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 0.25rem;
+}
+.contact-form-input {
+  margin-bottom: 2%;
+  width: 100%;
+}
+.contact-form-btn {
+  margin-top: 4%;
+  margin-bottom: 2%;
+  width: 40%;
+}
+@media (min-width: 576px) {
+  .main-photo {
+    width: 100%;
+    flex: 0 0 100%;
+    -ms-flex: 0 0 100%;
+    max-width: 100%;
+    padding-left: 20%;
+    padding-right: 20%;
+  }
+  .contact-form-input {
+    width: 80%;
+  }
+}
+@media (max-width: 576px) {
+  .five-column-flex {
+    width: 100;
+    max-width: 100%;
+  }
+}
+@media (max-width: 768px) {
+  .lightbox-gallery h2 {
+    margin-bottom: 25px;
+    padding-top: 25px;
+    font-size: 24px
+  }
+  .lightbox-gallery .intro {
+    font-size: 16px;
+    max-width: 500px;
+    margin: 0 auto 40px
+  }
+  .lightbox-gallery .intro p {
+    margin-bottom: 0
+  }
+  .lightbox-gallery .photos {
+    padding-bottom: 20px
+  }
+  .lightbox-gallery .item {
+    padding-bottom: 30px
+  }
+}
+@media (min-width: 768px) {
+  .contact-form-input {
+    width: 60%;
+  }
+  .contact-form-btn {
+    width: 20%;
+  }
+}
