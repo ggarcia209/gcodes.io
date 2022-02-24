@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: portfolio API Deployment
+
+Globals:
+  Api:
+    Cors:
+      AllowMethods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,X-Amz-Security-Token,Authorization,X-Api-Key,X-Requested-With,Accept,Access-Control-Allow-Methods,Access-Control-Allow-Origin,Access-Control-Allow-Headers'"
+      AllowOrigin: "'*'"
+    BinaryMediaTypes:
+      - ~1
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: Dev
+    AllowedValues: 
+      - Dev
+      - Test
+      - Prod
+      - LATEST
+    Description: Enter 'dev', 'test', or 'prod'. Default is 'dev'.
+  ServiceEmailAddress:
+    Type: String
+    Default: "example@example.com"
+    Description: Enter the SES verified email address for sending automated system emails.
+  ServiceEmailAddressArn:
+    Type: String
+    Default: ""
+    Description: Enter the SES ARN for the service email address.
+  AdminEmailAddress:
+    Type: String
+    Default: "example@example.com"
+    Description: Enter the email address to deliver admin notifications to.
+Resources:
+  # API Gateway
+  ApiGatewayDeployment:
+    Type: AWS::Serverless::Api
+    DependsOn: ApiCWLRoleArn
+    Properties:
+      StageName: !Ref ApiStageName
+      Description: "portfolio API Deployment"
+      AccessLogSetting:
+        DestinationArn: !GetAtt 'ApiAccessLogGroup.Arn'
+        Format: '{"stage" : "$context.stage","request_id" : "$context.requestId","api_id" : "$context.apiId","resource_path" : "$context.resourcePath","resource_id" : "$context.resourceId","http_method" : "$context.httpMethod","source_ip" : "$context.identity.sourceIp","user-agent" : "$context.identity.userAgent","account_id" : "$context.identity.accountId","api_key" : "$context.identity.apiKey","caller" : "$context.identity.caller","user" : "$context.identity.user","user_arn" : "$context.identity.userArn"}'
+      Auth:
+        ApiKeyRequired: false
+      BinaryMediaTypes:
+        - ~1
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub acamoprjct-Api-Access-Logs-${ApiStageName}
+      RetentionInDays: 365
+  ApiCWLRoleArn:
+    Type: AWS::ApiGateway::Account
+    Properties: 
+      CloudWatchRoleArn: !GetAtt 'ApiAccessLogsCloudWatchRole.Arn'
+  # Lambda
+  index:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exec/serve/index.zip
+      Runtime: go1.x
+      Handler: index
+      Timeout: 10
+      Environment:
+      Events:
+        RootHandler:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayDeployment
+            Path: '/'
+            Method: get
+      Role: !GetAtt 'ServeHtmlExecutionRole.Arn'
+  photography:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exec/serve/photography.zip
+      Runtime: go1.x
+      Handler: photography
+      Timeout: 10
+      Environment:
+      Events:
+        RootHandler:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayDeployment
+            Path: '/photography'
+            Method: get
+      Role: !GetAtt 'ServeHtmlExecutionRole.Arn'
+  about:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exec/serve/about.zip
+      Runtime: go1.x
+      Handler: about
+      Timeout: 10
+      Environment:
+      Events:
+        RootHandler:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayDeployment
+            Path: '/about'
+            Method: get
+      Role: !GetAtt 'ServeHtmlExecutionRole.Arn'
+  resources:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exec/serve/resources.zip
+      Runtime: go1.x
+      Handler: resources
+      Timeout: 10
+      Environment:
+      Events:
+        RootHandler:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayDeployment
+            Path: '/resources'
+            Method: get
+      Role: !GetAtt 'ServeHtmlExecutionRole.Arn'
+  contact:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exec/serve/contact.zip
+      Runtime: go1.x
+      Handler: contact
+      Timeout: 10
+      Environment:
+      Events:
+        RootHandler:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayDeployment
+            Path: '/contact'
+            Method: get
+      Role: !GetAtt 'ServeHtmlExecutionRole.Arn'
+  contactSubmit:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exec/contact/contactSubmit.zip
+      Runtime: go1.x
+      Handler: contactSubmit
+      Timeout: 10
+      Environment:
+        Variables:
+          SES_SERVICE_EMAIL_ADDRESS: !Ref ServiceEmailAddress
+          SES_ADMIN_EMAIL_ADDRESS: !Ref AdminEmailAddress
+      Events:
+        RootHandler:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayDeployment
+            Path: '/contact/submit'
+            Method: post
+      Role: !GetAtt 'EmailExecutionRole.Arn'
+  # iam roles + policies
+  ApiAccessLogsCloudWatchRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+  ServeHtmlExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+            - logs.amazonaws.com
+          Action:
+          - sts:AssumeRole
+  ServeHtmlLogsPolicy:
+    DependsOn: ServeHtmlExecutionRole
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ServeHtmlLogsPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+        - Effect: Allow
+          Action:
+          - logs:CreateLogStream
+          - logs:CreateLogGroup
+          - logs:PutLogEvents
+          Resource: '*'
+      Roles: 
+        - !Ref ServeHtmlExecutionRole
+  EmailExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+            - logs.amazonaws.com
+            - ses.amazonaws.com
+            - sqs.amazonaws.com
+          Action:
+          - sts:AssumeRole
+  EmailSESPolicy:
+    DependsOn: EmailExecutionRole
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: EmailSESPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+        - Effect: Allow
+          Action:
+          - ses:SendEmail
+          Resource: '*'
+      Roles: 
+        - !Ref EmailExecutionRole
+
+Outputs:
+  Endpoint:
+    Value: !Sub "https://${ApiGatewayDeployment}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}/"
